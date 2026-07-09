@@ -1,0 +1,179 @@
+<!-- pages/settings/settings.wxml - 设置页面（三模式版本） -->
+<view class="container">
+
+  <!-- 连接模式选择 -->
+  <view class="section">
+    <text class="section-title">连接模式</text>
+    <view class="card">
+      <view class="mode-options">
+        <view class="mode-option {{connectMode === 'standalone' ? 'active' : ''}}" bindtap="switchToStandalone">
+          <view class="mode-icon">📱</view>
+          <text class="mode-name">独立扫码</text>
+          <text class="mode-desc">扫码结果保存在手机，适合临时使用</text>
+        </view>
+        <view class="mode-option {{connectMode === 'clipboard' ? 'active' : ''}}" bindtap="switchToClipboard">
+          <view class="mode-icon">⌨️</view>
+          <text class="mode-name">剪贴板同步</text>
+          <text class="mode-desc" style="color: #07C160;">微信输入法跨设备，适合快速复制</text>
+        </view>
+        <view class="mode-option {{connectMode === 'websocket' ? 'active' : ''}}" bindtap="switchToWebSocket">
+          <view class="mode-icon">📡</view>
+          <text class="mode-name">WiFi 配对</text>
+          <text class="mode-desc">扫码自动发送到电脑，适合批量录入</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 电脑端下载（仅 WiFi 模式显示） -->
+  <view class="section" wx:if="{{connectMode === 'websocket'}}">
+    <text class="section-title">💻 电脑端下载</text>
+    <view class="card">
+      <text class="download-title">下载 ScanBridge.exe 到你的电脑，双击运行。</text>
+      <button class="btn-download" bindtap="copyDownloadGuide">📥 复制下载地址</button>
+
+      <view class="step-list" style="margin-top: 18rpx;">
+        <view class="step-item">
+          <text class="step-num">1</text>
+          <text class="step-text">双击运行 ScanBridge.exe，保持命令行窗口一直打开</text>
+        </view>
+        <view class="step-item">
+          <text class="step-num">2</text>
+          <text class="step-text">在电脑浏览器打开 http://localhost:8080，获取 6 位配对码</text>
+        </view>
+        <view class="step-item">
+          <text class="step-num">3</text>
+          <text class="step-text">在小程序选择「WiFi 配对」输入配对码，扫码自动发送</text>
+        </view>
+      </view>
+
+      <view class="weixin-hint card-inner" style="margin-top: 12rpx; background: #FFF9E6; border: 1rpx solid #FFE6A0;">
+        <text class="tip-title" style="color: #B8860B;">⚠️ 安全提示</text>
+        <text class="tip-step">个人开发工具，未购买数字签名，Windows 可能弹出安全警告，点击"更多信息"后选择"仍要运行"即可。</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 剪贴板同步 - 说明 -->
+  <view class="section" wx:if="{{connectMode === 'clipboard'}}">
+    <text class="section-title">剪贴板同步</text>
+    <view class="card">
+      <view class="clipboard-info">
+        <text class="clipboard-title">📋 工作原理</text>
+        <text class="clipboard-desc">扫码后自动复制到手机剪贴板，通过微信输入法的跨设备功能同步到电脑剪贴板，在电脑上 Ctrl+V 即可粘贴。</text>
+      </view>
+      <view class="require-list" style="margin-top: 12rpx;">
+        <view class="require-item">
+          <text class="require-check">✅</text>
+          <text class="require-text">手机和电脑都安装「微信输入法」</text>
+        </view>
+        <view class="require-item">
+          <text class="require-check">✅</text>
+          <text class="require-text">微信输入法中开启「跨设备」功能</text>
+        </view>
+        <view class="require-item">
+          <text class="require-check">✅</text>
+          <text class="require-text">扫码后在电脑上按 Ctrl+V 粘贴即可</text>
+        </view>
+      </view>
+      <view class="weixin-hint card-inner" style="margin-top: 12rpx; background: #F6FFF6; border: 1rpx solid #E0F5E0;">
+        <text class="tip-title" style="color: #07C160;">✅ 优势</text>
+        <text class="tip-step">无需配网、无需安装软件、不受网络限制</text>
+        <text class="tip-step">只要有微信输入法即可实现手机→电脑无缝传输</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- WiFi 配对信息 -->
+  <view class="section" wx:if="{{connectMode === 'websocket'}}">
+    <text class="section-title">WiFi 配对</text>
+    <view class="card">
+      <view class="form-row" wx:if="{{wsPaired}}">
+        <text class="form-label">连接状态</text>
+        <view class="form-value-success">✓ 已连接</view>
+      </view>
+      <view class="form-row" wx:if="{{wsPaired}}">
+        <text class="form-label">服务器地址</text>
+        <text class="form-value">{{serverUrl}}</text>
+      </view>
+      <view class="form-row" wx:if="{{!wsPaired}}">
+        <text class="form-label">连接状态</text>
+        <text class="form-value-danger">未配对</text>
+      </view>
+      <button class="btn-primary" style="margin-top: 20rpx;" bindtap="goToPair">
+        {{wsPaired ? '管理配对' : '开始配对'}}
+      </button>
+
+      <view class="step-list card-inner" wx:if="{{!wsPaired}}">
+        <text class="tip-title">💡 配对失败？</text>
+        <view class="tip-list-item">
+          <text class="tip-bullet">•</text>
+          <text class="tip-text">检查手机和电脑是否连接了同一个 Wi-Fi</text>
+        </view>
+        <view class="tip-list-item">
+          <text class="tip-bullet">•</text>
+          <text class="tip-text">检查电脑上的 ScanBridge.exe 是否仍在运行（命令行窗口不能关闭）</text>
+        </view>
+        <view class="tip-list-item">
+          <text class="tip-bullet">•</text>
+          <text class="tip-text">检查电脑防火墙是否允许了 8080 端口的访问</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 扫码设置 -->
+  <view class="section">
+    <text class="section-title">扫码设置</text>
+    <view class="card">
+      <view class="form-row">
+        <text class="form-label">扫码类型</text>
+        <picker mode="selector" range="{{scanTypeOptions}}" range-key="label" bindchange="onScanTypeChange">
+          <view class="picker-value">
+            <text>{{scanType === 'all' ? '全部（推荐）' : scanType === 'qrCode' ? '仅二维码' : '仅条形码'}}</text>
+            <text class="picker-arrow">></text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="form-row" wx:if="{{connectMode === 'websocket'}}">
+        <text class="form-label">扫码后自动发送</text>
+        <switch checked="{{autoSend}}" bindchange="onAutoSendChange" color="#07C160" />
+      </view>
+
+      <view class="form-row" wx:if="{{connectMode === 'clipboard'}}">
+        <text class="form-label">扫码后自动复制</text>
+        <switch checked="{{autoCopy}}" bindchange="onAutoCopyChange" color="#07C160" />
+      </view>
+
+      <view class="form-row">
+        <text class="form-label">震动反馈</text>
+        <switch checked="{{vibrate}}" bindchange="onVibrateChange" color="#07C160" />
+      </view>
+
+      <view class="form-row">
+        <text class="form-label">声音提示</text>
+        <switch checked="{{sound}}" bindchange="onSoundChange" color="#07C160" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 其他 -->
+  <view class="section">
+    <text class="section-title">其他</text>
+    <view class="card">
+      <view class="form-row" bindtap="clearCache">
+        <text class="form-label">清除缓存</text>
+        <text class="picker-arrow">></text>
+      </view>
+      <view class="form-row" bindtap="showAbout">
+        <text class="form-label">关于 ScanBridge</text>
+        <text class="picker-arrow">></text>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer">
+    <text class="footer-text">ScanBridge v5.0.0</text>
+  </view>
+</view>

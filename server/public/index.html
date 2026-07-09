@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScanBridge - 电脑接收端</title>
+  <style>
+    :root {
+      --primary: #07c160;
+      --primary-dark: #06ae56;
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #333333;
+      --text-secondary: #999999;
+      --border: #e5e5e5;
+      --error: #fa5151;
+      --success: #07c160;
+      --warning: #ffc300;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 24px 0 20px;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .header h1 span { color: var(--primary); }
+    .header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Status */
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #fafafa;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+    .status-dot.connected { background: var(--success); }
+    .status-dot.disconnected { background: var(--error); animation: none; }
+    .status-dot.connecting { background: var(--warning); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* QR Code styles removed - using plain pair code display */
+    .pair-code-display {
+      margin-top: 14px;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      color: var(--primary);
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .pair-code-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .copy-btn {
+      margin-top: 10px;
+      padding: 6px 18px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 16px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+    .copy-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .pair-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    .pair-buttons .copy-btn {
+      margin-top: 0;
+      font-size: 13px;
+      padding: 7px 16px;
+    }
+
+    /* Input Mode */
+    .mode-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mode-option {
+      display: flex;
+      align-items: center;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+    .mode-option:hover { border-color: var(--primary); }
+    .mode-option.active {
+      border-color: var(--primary);
+      background: rgba(7, 193, 96, 0.04);
+    }
+    .mode-option input[type="radio"] {
+      accent-color: var(--primary);
+      margin-right: 10px;
+      transform: scale(1.2);
+    }
+    .mode-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      margin-left: 26px;
+    }
+
+    /* Scan Results */
+    .results-list {
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .clear-btn {
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 4px 8px;
+    }
+    .clear-btn:hover { color: var(--error); }
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+      animation: slideIn 0.3s ease;
+    }
+    .result-item:last-child { border-bottom: none; }
+    .result-item:hover { background: #fafafa; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-content {
+      font-size: 14px;
+      word-break: break-all;
+      flex: 1;
+      min-width: 0;
+      margin-right: 12px;
+    }
+    .result-time {
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    .result-copy {
+      padding: 3px 10px;
+      font-size: 11px;
+      border: none;
+      background: transparent;
+      color: var(--primary);
+      cursor: pointer;
+      border-radius: 4px;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+    .result-copy:hover { background: rgba(7,193,96,0.08); }
+
+    /* v2.0 result meta badges */
+    .result-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .sn-badge {
+      font-size: 10px;
+      background: #e0f5e0;
+      color: #07c160;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+    .model-badge {
+      font-size: 10px;
+      background: #e8f0fe;
+      color: #1e6fff;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+    .tag-badge {
+      font-size: 10px;
+      background: #f0f0f0;
+      color: #666;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+      opacity: 0.3;
+    }
+
+    /* Auto-reconnect banner */
+    .reconnect-banner {
+      padding: 8px 14px;
+      background: #fff9e6;
+      border: 1px solid var(--warning);
+      border-radius: 8px;
+      font-size: 12px;
+      color: #8c6d00;
+      margin-bottom: 12px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .reconnect-banner.show { display: flex; }
+    .reconnect-banner button {
+      margin-left: auto;
+      padding: 2px 12px;
+      font-size: 12px;
+      border: 1px solid var(--warning);
+      background: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #8c6d00;
+      white-space: nowrap;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 20px 0;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .footer a { color: var(--primary); text-decoration: none; }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: #333;
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 20px;
+      font-size: 13px;
+      z-index: 9999;
+      transition: transform 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* Device count badge */
+    .device-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      background: rgba(7,193,96,0.1);
+      color: var(--primary);
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-left: auto;
+    }
+
+    /* Server config area */
+    .server-config {
+      margin-bottom: 16px;
+    }
+    .server-config input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .server-config input:focus {
+      border-color: var(--primary);
+    }
+    .connect-btn {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .connect-btn:hover { background: var(--primary-dark); }
+    .connect-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    /* Phone config hint */
+    .phone-hint {
+      margin-top: 12px;
+      padding: 14px;
+      background: rgba(7,193,96,0.06);
+      border: 1px dashed var(--primary);
+      border-radius: 10px;
+      font-size: 13px;
+    }
+    .phone-hint-title {
+      font-weight: 600;
+      color: var(--primary-dark);
+      margin-bottom: 6px;
+    }
+    .phone-hint-url {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 14px;
+      color: var(--text);
+      margin: 4px 0;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .phone-hint-url:hover { border-color: var(--primary); }
+    .phone-hint-url.copied { border-color: var(--primary); background: rgba(7,193,96,0.08); }
+    .phone-hint-steps {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+
+    /* Auto-paste hint */
+    .auto-paste-hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: rgba(7,193,96,0.06);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--primary-dark);
+      margin-top: 10px;
+    }
+    .auto-paste-hint svg { flex-shrink: 0; }
+
+    /* Keep alive indicator */
+    .keep-alive-tip {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #b3b3b3;
+      text-align: center;
+    }
+    .keep-alive-tip.locked { color: var(--primary); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1><span>Scan</span>Bridge</h1>
+      <p>手机扫码 &rarr; 电脑自动接收</p>
+    </div>
+
+    <!-- Reconnect Banner -->
+    <div class="reconnect-banner" id="reconnectBanner">
+      <span>&#9888;</span>
+      <span>连接已断开，正在尝试恢复...</span>
+      <button onclick="forceReconnect()">立即重连</button>
+    </div>
+
+    <!-- Connection Status -->
+    <div class="card">
+      <div class="card-title">连接状态</div>
+      <div class="status-row" id="statusRow">
+        <span><span class="status-dot disconnected" id="statusDot"></span><span id="statusText">未连接</span></span>
+        <span class="device-badge" id="deviceBadge" style="display:none">
+          <span>&#128241;</span> <span id="deviceCount">0</span> 台设备
+        </span>
+      </div>
+      <div class="keep-alive-tip" id="keepAliveTip">请保持此页面打开以接收扫码结果</div>
+    </div>
+
+    <!-- Server Config -->
+    <div class="card server-config" id="serverConfig">
+      <div class="card-title">服务器地址</div>
+      <input type="text" id="serverUrl" placeholder="例如：ws://192.168.1.100:8080 或 wss://your-domain.com"
+             value="" />
+      <button class="connect-btn" id="connectBtn" onclick="connectToServer()">连接服务器</button>
+      <p style="font-size:11px;color:#999;margin-top:8px;text-align:center;">
+        提示：如果服务在本机，通常填 ws://localhost:8080
+      </p>
+    </div>
+
+    <!-- Phone Config Hint -->
+    <div class="card" id="phoneHintCard">
+      <div class="phone-hint">
+        <div class="phone-hint-title">&#128241; 手机端配置指引</div>
+        <div>在小程序「设置」中选择「WiFi 配对」，地址栏填入：</div>
+        <div class="phone-hint-url" id="phoneWsUrl" onclick="copyPhoneWsUrl()" title="点击复制">&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;</div>
+        <div class="phone-hint-steps">
+          1. 微信小程序 &#8594; 设置 &#8594; 选择「WiFi 配对」<br>
+          2. 输入上面的地址和下方配对码<br>
+          3. 扫码测试 &#8594; 结果自动到达这里
+        </div>
+      </div>
+    </div>
+
+    <!-- Pairing Info -->
+    <div class="card" id="pairCard" style="display:none">
+      <div class="card-title">&#128273; 配对码</div>
+      <p style="font-size:12px;color:#999;margin-bottom:14px;">手机端输入此 6 位配对码完成连接</p>
+      <div class="pair-code-display" id="pairCodeDisplay">------</div>
+      <div class="pair-code-label">在小程序「设置」→「WiFi 配对」页面输入</div>
+      <div class="pair-buttons">
+        <button class="copy-btn" onclick="copyPairCode()">📋 复制配对码</button>
+        <button class="copy-btn" onclick="refreshPairCode()" id="refreshPairBtn">🔄 刷新</button>
+      </div>
+    </div>
+
+    <!-- Input Mode -->
+    <div class="card" id="modeCard" style="display:none">
+      <div class="card-title">&#9889; 输入模式</div>
+      <div class="mode-selector">
+        <label class="mode-option active" id="modeClipboard">
+          <input type="radio" name="inputMode" value="clipboard" checked onchange="setInputMode('clipboard')">
+          <div>
+            <div>&#128203; 复制到剪贴板（推荐）</div>
+            <div class="mode-desc">扫码结果自动复制，直接 Ctrl+V 粘贴到 Excel</div>
+          </div>
+        </label>
+        <label class="mode-option" id="modeLog">
+          <input type="radio" name="inputMode" value="log" onchange="setInputMode('log')">
+          <div>
+            <div>&#128196; 仅记录显示</div>
+            <div class="mode-desc">扫码结果仅在此页面展示，不自动复制</div>
+          </div>
+        </label>
+      </div>
+      <div class="auto-paste-hint" id="autoPasteHint" style="display:none; cursor: pointer;" onclick="retryPendingCopy()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        已复制到最后一条结果，去 Excel 按 Ctrl+V 粘贴即可
+      </div>
+    </div>
+
+    <!-- Scan Results -->
+    <div class="card" id="resultsCard" style="display:none">
+      <div class="card-title">
+        &#128202; 扫码记录
+        <span style="font-size:12px;font-weight:normal;color:#999;margin-left:auto;" id="resultCount">0 条</span>
+      </div>
+      <div class="results-header">
+        <button class="clear-btn" onclick="exportExcel()" id="exportBtn" style="display:none;margin-right:8px;background:#07C160;">📥 导出Excel</button>
+        <button class="clear-btn" onclick="clearHistory()" id="clearHistoryBtn" style="display:none">清除记录</button>
+      </div>
+      <div class="results-list" id="resultsList">
+        <div class="empty-state">
+          <div class="empty-icon">&#128247;</div>
+          <div>等待扫码...</div>
+          <div style="margin-top:6px;font-size:11px;">配对成功后，手机扫码的结果会显示在这里</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      ScanBridge v5.0.0 &middot; 浏览器版接收端
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- QR Code removed - pairing code is meant to be manually entered on the phone -->
+
+  <!-- Main Application Logic -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script>
+    // ====== Constants ======
+    const STORAGE_KEY = 'scanbridge_state';
+
+    // ====== Persistent State ======
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return {
+            sessionId: parsed.sessionId || null,
+            pairCode: parsed.pairCode || '',
+            serverUrl: parsed.serverUrl || localStorage.getItem('scanbridge_server_url') || '',
+            results: parsed.results || [],
+            inputMode: parsed.inputMode || 'clipboard',
+          };
+        }
+      } catch(e) {}
+      return { sessionId: null, pairCode: '', serverUrl: localStorage.getItem('scanbridge_server_url') || '', results: [], inputMode: 'clipboard' };
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch(e) { console.warn('Failed to save state:', e); }
+    }
+
+    let ws = null;
+    let reconnectTimer = null;
+    let reconnectAttempts = 0;
+    let pingInterval = null;
+    let wakeLock = null;
+    let pendingCopy = null;    // 后台切出时暂存待复制内容
+    let deviceCount = 0;
+
+    // ====== Initialize ======
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlInput = document.getElementById('serverUrl');
+
+      // Auto-detect or restore server URL
+      if (state.serverUrl) {
+        urlInput.value = state.serverUrl;
+      } else if (location.protocol !== 'file:') {
+        urlInput.value = detectServerUrl();
+      } else {
+        urlInput.value = 'ws://localhost:8080';
+      }
+
+      // Restore history
+      if (state.results.length > 0) {
+        document.getElementById('resultsCard').style.display = '';
+        document.getElementById('modeCard').style.display = '';
+        document.getElementById('clearHistoryBtn').style.display = '';
+        renderResults();
+      }
+
+      // Restore pair code display while waiting for reconnect
+      if (state.pairCode) {
+        document.getElementById('pairCodeDisplay').textContent = state.pairCode;
+      }
+
+      // Restore input mode
+      if (state.inputMode === 'log') setInputMode('log');
+
+      // Fetch IPs for phone hint
+      fetchPhoneConfigHint();
+
+      // Auto-connect if we have a saved session
+      if (state.sessionId && state.serverUrl) {
+        setTimeout(autoConnect, 500);
+      }
+
+      // Try to keep page alive with Wake Lock
+      requestWakeLock();
+    });
+
+    function autoConnect() {
+      if (state.serverUrl) {
+        connectToServer(false); // silent mode
+      }
+    }
+
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          document.getElementById('keepAliveTip').textContent = '已保持激活 - 切换到其他窗口仍可接收';
+          document.getElementById('keepAliveTip').classList.add('locked');
+          wakeLock.addEventListener('release', () => {
+            document.getElementById('keepAliveTip').textContent = '请保持此页面打开以接收扫码结果';
+            document.getElementById('keepAliveTip').classList.remove('locked');
+          });
+        }
+      } catch(e) {
+        console.log('Wake Lock not supported or denied');
+      }
+    }
+
+    // Re-acquire wake lock on visibility change
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        // 后台切回前台：自动补发待复制的扫码结果
+        if (pendingCopy) {
+          const text = pendingCopy;
+          pendingCopy = null;
+          copyToClipboard(text, '已自动复制').then(() => {
+            const hint = document.getElementById('autoPasteHint');
+            hint.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 已复制到剪贴板，去 Excel 按 Ctrl+V 粘贴即可';
+            hint.style.display = '';
+            hint.style.opacity = '1';
+            setTimeout(() => { hint.style.opacity = '0.5'; }, 2000);
+          }).catch(() => {
+            // 仍然失败，保留待复制状态
+            pendingCopy = text;
+            showPendingCopyHint();
+          });
+        }
+        if (ws && ws.readyState !== WebSocket.OPEN) {
+          showReconnectBanner();
+        }
+        if (!wakeLock) {
+          requestWakeLock();
+        }
+      }
+    });
+
+    function showReconnectBanner() {
+      document.getElementById('reconnectBanner').classList.add('show');
+      // Auto-hide after successful reconnect
+      setTimeout(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          document.getElementById('reconnectBanner').classList.remove('show');
+        }
+      }, 5000);
+    }
+
+    function forceReconnect() {
+      reconnectAttempts = 0;
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+      connectToServer();
+    }
+
+    // ====== Connection ======
+    function detectServerUrl() {
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${proto}//${location.host}`;
+    }
+
+    async function fetchPhoneConfigHint() {
+      try {
+        const resp = await fetch('/api/ips');
+        const data = await resp.json();
+        const phoneWsUrl = document.getElementById('phoneWsUrl');
+        phoneWsUrl.textContent = data.recommendedWsUrl;
+        phoneWsUrl.setAttribute('data-url', data.recommendedWsUrl);
+      } catch(e) {
+        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const fallback = `${proto}//${location.host}`;
+        const phoneWsUrl = document.getElementById('phoneWsUrl');
+        phoneWsUrl.textContent = fallback;
+        phoneWsUrl.setAttribute('data-url', fallback);
+      }
+    }
+
+    function copyPhoneWsUrl() {
+      const el = document.getElementById('phoneWsUrl');
+      const url = el.getAttribute('data-url') || el.textContent;
+      copyToClipboard(url, '已复制！粘贴到小程序设置页即可');
+      el.classList.add('copied');
+      setTimeout(() => el.classList.remove('copied'), 2000);
+    }
+
+    function connectToServer(silent = false) {
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        console.log('[WS] Already connected or connecting');
+        return;
+      }
+
+      const urlInput = document.getElementById('serverUrl');
+      const url = urlInput.value.trim() || state.serverUrl;
+      if (!url) {
+        if (!silent) showToast('请输入服务器地址');
+        return;
+      }
+
+      updateStatus('connecting', '正在连接...');
+      const btn = document.getElementById('connectBtn');
+      btn.disabled = true;
+      btn.textContent = '连接中...';
+      state.serverUrl = url;
+      localStorage.setItem('scanbridge_server_url', url);
+      saveState();
+
+      try {
+        ws = new WebSocket(url);
+
+        ws.onopen = () => {
+          console.log('[WS] Connected to server');
+          updateStatus('connected', '已连接到服务器');
+          document.getElementById('reconnectBanner').classList.remove('show');
+          reconnectAttempts = 0;
+          saveState();
+
+          // Hide config, show pair card placeholder
+          document.getElementById('serverConfig').style.display = 'none';
+          document.getElementById('pairCard').style.display = '';
+          document.getElementById('pairCodeDisplay').textContent = '------';
+          document.getElementById('modeCard').style.display = '';
+          document.getElementById('resultsCard').style.display = '';
+
+          // Start heartbeat to keep server alive
+          startPing();
+
+          // Register - try to resume session if we have one
+          const registerMsg = { type: 'register_desktop' };
+          if (state.sessionId) {
+            registerMsg.sessionId = state.sessionId;
+            console.log('[WS] Attempting session recovery:', state.sessionId);
+          }
+          ws.send(JSON.stringify(registerMsg));
+        };
+
+        ws.onmessage = (event) => {
+          handleMessage(JSON.parse(event.data));
+        };
+
+        ws.onclose = (event) => {
+          console.log('[WS] Disconnected, code:', event.code);
+          updateStatus('disconnected', '连接已断开');
+          stopPing();
+          deviceCount = 0;
+          updateDeviceCount(0);
+          document.getElementById('serverConfig').style.display = '';
+          document.getElementById('connectBtn').disabled = false;
+          document.getElementById('connectBtn').textContent = '重新连接';
+
+          // Don't reconnect if this was a deliberate close for duplicate
+          if (event.code !== 4001) {
+            scheduleReconnect();
+          }
+        };
+
+        ws.onerror = () => {
+          if (!silent) {
+            updateStatus('disconnected', '连接失败');
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('connectBtn').textContent = '重新连接';
+            showToast('无法连接服务器，请检查地址是否正确');
+          }
+        };
+      } catch(e) {
+        if (!silent) {
+          showToast('地址格式错误：' + e.message);
+          document.getElementById('connectBtn').disabled = false;
+          document.getElementById('connectBtn').textContent = '连接服务器';
+        }
+      }
+    }
+
+    function scheduleReconnect() {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      showReconnectBanner();
+
+      // Exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s
+      const delays = [1000, 2000, 4000, 8000, 16000, 30000];
+      const idx = Math.min(reconnectAttempts, delays.length - 1);
+      const delay = delays[idx];
+      reconnectAttempts++;
+
+      console.log(`[WS] Auto-reconnect in ${delay}ms (attempt ${reconnectAttempts})`);
+      reconnectTimer = setTimeout(() => {
+        connectToServer(true);
+      }, delay);
+    }
+
+    function startPing() {
+      stopPing();
+      pingInterval = setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 25000); // 25 seconds, well under server's 60s timeout
+    }
+
+    function stopPing() {
+      if (pingInterval) {
+        clearInterval(pingInterval);
+        pingInterval = null;
+      }
+    }
+
+    function handleMessage(msg) {
+      console.log('[MSG]', msg.type, msg);
+
+      try {
+        switch (msg.type) {
+          case 'registered':
+            state.sessionId = msg.sessionId;
+            state.pairCode = msg.code;
+
+            if (!msg.resumed) {
+              console.log('[SESSION] New session:', state.sessionId, 'code:', state.pairCode);
+            } else {
+              console.log('[SESSION] Resumed session:', state.sessionId, 'code:', state.pairCode);
+              showToast('连接已恢复');
+            }
+
+            document.getElementById('pairCodeDisplay').textContent = state.pairCode;
+            document.getElementById('pairCard').style.display = '';
+            document.getElementById('modeCard').style.display = '';
+            document.getElementById('resultsCard').style.display = '';
+            saveState();
+
+            if (state.results.length === 0) {
+              renderResults();
+            }
+            break;
+
+          case 'miniapp_connected':
+            deviceCount = msg.count;
+            updateDeviceCount(deviceCount);
+            showToast(`手机已配对！（共 ${msg.count} 台）`);
+            break;
+
+          case 'miniapp_disconnected':
+            deviceCount = msg.count;
+            updateDeviceCount(deviceCount);
+            break;
+
+          case 'scan_result':
+            addResult(msg.data);
+            break;
+
+          case 'pong':
+            break;
+        }
+      } catch(e) {
+        console.error('[MSG] Handler error:', e);
+      }
+    }
+
+    // ====== Status Updates ======
+    function updateStatus(state, text) {
+      const dot = document.getElementById('statusDot');
+      dot.className = 'status-dot ' + state;
+      document.getElementById('statusText').textContent = text;
+    }
+
+    function updateDeviceCount(count) {
+      const badge = document.getElementById('deviceBadge');
+      if (count > 0) {
+        badge.style.display = '';
+        document.getElementById('deviceCount').textContent = count;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    // ====== Pair Code ======
+
+    function copyPairCode() {
+      copyToClipboard(state.pairCode, '配对码已复制');
+    }
+
+    function refreshPairCode() {
+      // 清空旧 session，重连获取新配对码
+      state.sessionId = null;
+      state.pairCode = '';
+      saveState();
+      document.getElementById('pairCodeDisplay').textContent = '------';
+      document.getElementById('refreshPairBtn').disabled = true;
+      document.getElementById('refreshPairBtn').textContent = '刷新中...';
+
+      if (ws) {
+        ws.close(1000, 'manual refresh');
+      }
+
+      // 清理旧会话，迫使服务器创建新会话
+      setTimeout(() => {
+        connectToServer(false);
+      }, 500);
+
+      // 重连成功后恢复按钮
+      setTimeout(() => {
+        const btn = document.getElementById('refreshPairBtn');
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 刷新'; }
+      }, 5000);
+    }
+
+    // ====== Input Mode ======
+    function setInputMode(mode) {
+      state.inputMode = mode;
+      document.querySelectorAll('.mode-option').forEach(el => el.classList.remove('active'));
+      document.getElementById(mode === 'clipboard' ? 'modeClipboard' : 'modeLog').classList.add('active');
+      const hint = document.getElementById('autoPasteHint');
+      hint.style.display = mode === 'clipboard' ? '' : 'none';
+      saveState();
+    }
+
+    // ====== Results Management ======
+    function addResult(data) {
+      const result = {
+        content: data.content,
+        format: data.format || 'unknown',
+        time: new Date().toISOString(),
+        // v2.0: SN 和设备信息
+        sn: data.sn || '',
+        deviceModel: data.deviceModel || '',
+        tags: data.tags || [],
+      };
+      state.results.unshift(result);
+      // Keep max 200 records in memory
+      if (state.results.length > 200) state.results.pop();
+      saveState();
+
+      renderResults();
+
+      // Auto-copy if clipboard mode
+      if (state.inputMode === 'clipboard') {
+        if (document.visibilityState === 'visible') {
+          // 前台：直接复制
+          copyToClipboard(data.content, '').then(() => {
+            document.getElementById('autoPasteHint').style.display = '';
+            setTimeout(() => {
+              document.getElementById('autoPasteHint').style.opacity = '0.5';
+            }, 2000);
+          }).catch(() => {
+            // 复制失败也不影响，用户可以看到记录
+            pendingCopy = data.content;
+            showPendingCopyHint();
+          });
+        } else {
+          // 后台：暂存，等切回前台再复制
+          pendingCopy = data.content;
+          showPendingCopyHint();
+        }
+      }
+
+      playNotificationSound();
+    }
+
+    function showPendingCopyHint() {
+      const hint = document.getElementById('autoPasteHint');
+      hint.style.display = '';
+      hint.style.opacity = '1';
+      hint.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> 有内容待复制 — 点击此处或切回此页面自动复制';
+    }
+
+    function retryPendingCopy() {
+      if (pendingCopy) {
+        const text = pendingCopy;
+        pendingCopy = null;
+        copyToClipboard(text, '已复制').then(() => {
+          const hint = document.getElementById('autoPasteHint');
+          hint.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 已复制到剪贴板，去 Excel 按 Ctrl+V 粘贴即可';
+          hint.style.opacity = '1';
+          setTimeout(() => { hint.style.opacity = '0.5'; }, 2000);
+        });
+      }
+    }
+
+    function renderResults() {
+      const list = document.getElementById('resultsList');
+      const countEl = document.getElementById('resultCount');
+      const clearBtn = document.getElementById('clearHistoryBtn');
+      const exportBtn = document.getElementById('exportBtn');
+      countEl.textContent = state.results.length + ' 条';
+      clearBtn.style.display = state.results.length > 0 ? '' : 'none';
+      exportBtn.style.display = state.results.length > 0 ? '' : 'none';
+
+      if (state.results.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#128247;</div><div>等待扫码...</div></div>`;
+        return;
+      }
+
+      list.innerHTML = state.results.map((r, i) => `
+        <div class="result-item" data-index="${i}">
+          <div class="result-content">${escapeHtml(r.content)}</div>
+          <div class="result-meta">
+            ${r.sn ? `<span class="sn-badge">SN: ${escapeHtml(r.sn)}</span>` : ''}
+            ${r.deviceModel ? `<span class="model-badge">${escapeHtml(r.deviceModel)}</span>` : ''}
+            ${(r.tags || []).map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join('')}
+          </div>
+          <span class="result-time">${formatTimeStr(r.time)}</span>
+          <button class="result-copy" onclick="copyResult(${i})">&#128203;</button>
+        </div>
+      `).join('');
+
+      // Scroll to top to show newest
+      list.scrollTop = 0;
+    }
+
+    function copyResult(index) {
+      if (index >= 0 && index < state.results.length) {
+        copyToClipboard(state.results[index].content, '已复制');
+      }
+    }
+
+    function clearHistory() {
+      state.results = [];
+      saveState();
+      renderResults();
+      document.getElementById('clearHistoryBtn').style.display = 'none';
+      document.getElementById('exportBtn').style.display = 'none';
+      showToast('记录已清除');
+    }
+
+    // ====== v2.0 Excel 导出 ======
+
+    function exportExcel() {
+      if (!state.results.length) return;
+      if (typeof XLSX === 'undefined') {
+        showToast('正在加载导出组件，请稍后重试');
+        return;
+      }
+
+      const data = state.results.map((r) => ({
+        '扫码内容': r.content,
+        '类型': r.format,
+        'SN': r.sn || '',
+        '设备型号': r.deviceModel || '',
+        '标签': (r.tags || []).join(', '),
+        '时间': new Date(r.time).toLocaleString('zh-CN'),
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      // 设置列宽
+      ws['!cols'] = [
+        { wch: 40 },  // 扫码内容
+        { wch: 12 },  // 类型
+        { wch: 25 },  // SN
+        { wch: 20 },  // 设备型号
+        { wch: 20 },  // 标签
+        { wch: 20 },  // 时间
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'ScanBridge 扫码记录');
+      XLSX.writeFile(wb, `ScanBridge_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      showToast('导出成功！');
+    }
+
+    // ====== Utilities ======
+    function copyToClipboard(text, toastMsg) {
+      return new Promise((resolve, reject) => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            if (toastMsg) showToast(toastMsg);
+            resolve();
+          }).catch(() => {
+            // Clipboard API failed (e.g. page in background), try fallback
+            try {
+              fallbackCopy(text, toastMsg, resolve, reject);
+            } catch(e) {
+              reject(e);
+            }
+          });
+        } else {
+          fallbackCopy(text, toastMsg, resolve, reject);
+        }
+      });
+    }
+
+    function fallbackCopy(text, toastMsg, resolve, reject) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        if (toastMsg) showToast(toastMsg);
+        if (resolve) resolve();
+      } catch(e) {
+        if (reject) reject(e);
+      }
+      document.body.removeChild(ta);
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function formatTimeStr(iso) {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch(e) {
+        return '';
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function playNotificationSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 1200;
+        gain.gain.value = 0.05;
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.stop(ctx.currentTime + 0.15);
+      } catch(e) {}
+    }
+
+    // Keyboard: Enter to connect
+    document.getElementById('serverUrl').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') connectToServer();
+    });
+  </script>
+</body>
+</html>

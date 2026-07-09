@@ -1,0 +1,132 @@
+<!-- pages/history/history.wxml - v2.0 筛选 + 设备型号 -->
+<view class="container">
+  <!-- 统计栏 -->
+  <view class="stats-bar card" wx:if="{{history.length > 0}}">
+    <view class="stat-item">
+      <text class="stat-num">{{stats.total}}</text>
+      <text class="stat-label">总计</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-num text-success">{{stats.sent}}</text>
+      <text class="stat-label">已发送</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-num text-danger">{{stats.failed}}</text>
+      <text class="stat-label">失败</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-num">{{stats.pending}}</text>
+      <text class="stat-label">待发送</text>
+    </view>
+  </view>
+
+  <!-- v2.0 筛选栏 -->
+  <view class="filter-bar card" wx:if="{{history.length > 0 || filterHasSN || filterTag || filterNoDup}}">
+    <view class="filter-row">
+      <view class="filter-chip {{filterHasSN ? 'active' : ''}}" bindtap="toggleFilterSN">
+        <text>🔍 SN记录</text>
+      </view>
+      <view class="filter-chip {{filterNoDup ? 'active' : ''}}" bindtap="toggleFilterNoDup">
+        <text>去重</text>
+      </view>
+      <view class="filter-chip" bindtap="toggleAllTags">
+        <text>🏷 标签 {{filterTag ? ': ' + filterTag : ''}}</text>
+      </view>
+    </view>
+    <view class="tag-list" wx:if="{{showAllTags && allTags.length > 0}}">
+      <text class="tag-option {{filterTag === item ? 'active' : ''}}"
+            wx:for="{{allTags}}" wx:key="*this"
+            data-tag="{{item}}" bindtap="filterByTag">{{item}}</text>
+    </view>
+    <view class="tag-list" wx:if="{{showAllTags && allTags.length === 0}}">
+      <text class="tag-option">暂无标签，扫码后可添加</text>
+    </view>
+    <view class="filter-actions" wx:if="{{history.length > 0}}">
+      <button class="export-csv-btn" bindtap="exportCSV">📥 导出CSV</button>
+    </view>
+  </view>
+
+  <!-- 记录列表 -->
+  <view class="history-list" wx:if="{{history.length > 0}}">
+    <view
+      class="history-item card"
+      wx:for="{{history}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onItemTap"
+    >
+      <view class="item-header">
+        <text class="item-format">{{item.formatText}}</text>
+        <view class="item-badges">
+          <text class="item-badge sn-badge" wx:if="{{item.snDetected}}">SN: {{item.sn}}</text>
+          <text class="item-badge dup-badge" wx:if="{{item.duplicate}}">重复</text>
+        </view>
+        <view class="item-status">
+          <view class="status-dot {{item.status === 'sent' ? 'online' : item.status === 'failed' ? 'error' : 'pending'}}"></view>
+          <text class="status-label {{item.status === 'sent' ? 'text-success' : item.status === 'failed' ? 'text-danger' : ''}}">
+            {{item.status === 'sent' ? '已发送' : item.status === 'failed' ? '失败' : '待发送'}}
+          </text>
+        </view>
+      </view>
+      <view class="item-content">
+        <text class="item-text" selectable="{{true}}">{{item.content}}</text>
+      </view>
+      <view class="item-footer">
+        <view class="item-meta">
+          <text class="item-device-model" wx:if="{{item.deviceModel}}" data-id="{{item.id}}" catchtap="openEditModel">{{item.deviceModel}}</text>
+          <text class="item-add-model" wx:if="{{!item.deviceModel}}" data-id="{{item.id}}" catchtap="openEditModel">+ 型号</text>
+        </view>
+        <text class="item-time">{{item.timeText}}</text>
+      </view>
+      <view class="item-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+        <text class="item-tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 清空按钮 -->
+  <button class="btn-secondary" style="margin-top: 24rpx;" wx:if="{{history.length > 0}}" bindtap="clearAll">
+    清空所有记录
+  </button>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{history.length === 0}}">
+    <text class="empty-icon">📋</text>
+    <text class="empty-text">暂无扫码记录</text>
+    <text class="empty-hint">扫码后记录会显示在这里</text>
+  </view>
+
+  <!-- 底部操作面板 -->
+  <view class="action-mask" wx:if="{{showActions}}" bindtap="closeActions"></view>
+  <view class="action-sheet" wx:if="{{showActions}}">
+    <view class="action-item {{selectedItem && selectedItem.status === 'pending' ? '' : 'disabled'}}"
+          bindtap="sendItem"
+          wx:if="{{selectedItem && selectedItem.status === 'pending'}}">
+      <text>📡 发送到电脑</text>
+    </view>
+    <view class="action-item" bindtap="copyItem">
+      <text>复制内容</text>
+    </view>
+    <view class="action-item danger" bindtap="deleteItem">
+      <text>删除记录</text>
+    </view>
+    <view class="action-cancel" bindtap="closeActions">
+      <text>取消</text>
+    </view>
+  </view>
+
+  <!-- 编辑设备型号弹窗 -->
+  <view class="action-mask" wx:if="{{showEditModel}}" bindtap="cancelEditModel"></view>
+  <view class="edit-model-sheet" wx:if="{{showEditModel}}">
+    <text class="edit-model-title">设备型号</text>
+    <input class="edit-model-input" placeholder="输入设备型号" value="{{editModelValue}}"
+           bindinput="onEditModelInput" confirm-type="done" bindconfirm="confirmEditModel" />
+    <view class="edit-model-actions">
+      <button class="edit-model-btn cancel" bindtap="cancelEditModel">取消</button>
+      <button class="edit-model-btn confirm" bindtap="confirmEditModel">确认</button>
+    </view>
+  </view>
+</view>

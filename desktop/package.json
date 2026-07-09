@@ -1,0 +1,51 @@
+{
+  "name": "scanbridge-desktop",
+  "version": "1.0.0",
+  "description": "ScanBridge 电脑端 - 接收手机扫码结果",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build:portable": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "com.scanbridge.desktop",
+    "productName": "ScanBridge",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "../server/**/*",
+      "!../server/node_modules"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        },
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "ScanBridge-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ScanBridge"
+    },
+    "portable": {
+      "artifactName": "ScanBridge-${version}-portable.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}

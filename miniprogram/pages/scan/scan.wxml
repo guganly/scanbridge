@@ -1,0 +1,139 @@
+<!-- pages/scan/scan.wxml - 扫码主页面（三模式版本） -->
+<view class="container">
+
+  <!-- WiFi 模式状态栏 -->
+  <view class="status-bar card ws-bar" wx:if="{{connectMode === 'websocket'}}">
+    <view class="status-info">
+      <view class="status-left">
+        <view class="status-dot {{wsPaired ? 'online' : 'offline'}}"></view>
+        <text class="status-text">{{wsPaired ? 'WiFi 已连接' : '未配对'}}</text>
+      </view>
+      <view class="status-right" bindtap="goToPair">
+        <text class="link-text">{{wsPaired ? '管理配对 >' : '开始配对 >'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 剪贴板模式状态栏 -->
+  <view class="status-bar card clipboard-bar" wx:if="{{connectMode === 'clipboard'}}">
+    <view class="status-info">
+      <view class="status-left">
+        <view class="status-dot online"></view>
+        <text class="status-text">剪贴板同步</text>
+      </view>
+      <view class="status-right">
+        <text class="link-text">微信输入法跨设备</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 独立模式状态栏 -->
+  <view class="status-bar card standalone-bar" wx:if="{{connectMode === 'standalone'}}">
+    <view class="status-info">
+      <view class="status-left">
+        <view class="status-dot offline"></view>
+        <text class="status-text">独立模式</text>
+      </view>
+      <view class="status-right">
+        <text class="link-text">扫码后手动复制</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 扫码按钮 -->
+  <view class="scan-area">
+    <view class="scan-button {{sending ? 'sending' : ''}} {{sendStatus === 'success' ? 'success' : ''}} {{sendStatus === 'failed' ? 'failed' : ''}}" bindtap="startScan">
+      <view class="scan-icon" wx:if="{{!sending && sendStatus !== 'success' && sendStatus !== 'failed'}}">
+        <view class="scan-icon-frame"></view>
+        <text class="scan-icon-text">SCAN</text>
+      </view>
+      <view class="scan-loading" wx:if="{{sending || sendStatus === 'sending'}}">
+        <view class="loading-spinner"></view>
+        <text>{{connectMode === 'websocket' ? '发送中...' : '处理中...'}}</text>
+      </view>
+      <view class="scan-success" wx:if="{{sendStatus === 'success'}}">
+        <text class="check-mark">✓</text>
+        <text>{{connectMode === 'websocket' ? '已发送' : connectMode === 'clipboard' ? '已同步' : '已保存'}}</text>
+      </view>
+      <view class="scan-failed" wx:if="{{sendStatus === 'failed'}}">
+        <text class="cross-mark">✕</text>
+        <text>发送失败</text>
+      </view>
+    </view>
+    <text class="scan-hint">点击按钮开始扫码</text>
+    <text class="scan-count">累计扫码 {{scanCount}} 次</text>
+  </view>
+
+  <!-- 扫码结果 -->
+  <view class="result-card card" wx:if="{{lastResult}}">
+    <view class="result-header">
+      <text class="result-title">扫码结果</text>
+      <view class="result-header-right">
+        <text class="result-duplicate" wx:if="{{isDuplicate}}">重复</text>
+        <text class="result-time">{{lastResultTime}}</text>
+      </view>
+    </view>
+    <view class="result-content">
+      <text class="result-text" selectable="{{true}}">{{lastResult.content}}</text>
+    </view>
+    <view class="result-meta">
+      <text class="format-tag">{{lastResult.format}}</text>
+      <text class="sn-tag" wx:if="{{snInfo}}">SN: {{snInfo.value}}</text>
+    </view>
+
+    <!-- v2.0 标签 & 设备型号 -->
+    <view class="tag-section">
+      <view class="device-model-row">
+        <input class="model-input"
+               placeholder="设备型号（选填）"
+               value="{{deviceModel}}"
+               bindinput="onDeviceModelInput" />
+      </view>
+      <view class="tags-row" wx:if="{{lastResult.tags && lastResult.tags.length > 0}}">
+        <text class="tag-label">标签:</text>
+        <text class="tag-item" wx:for="{{lastResult.tags}}" wx:key="*this">{{item}}</text>
+        <text class="tag-add-btn" bindtap="openTagInput">+</text>
+      </view>
+      <view class="tags-row" wx:else>
+        <text class="tag-add-btn" bindtap="openTagInput">+ 添加标签</text>
+      </view>
+      <!-- 标签输入框 -->
+      <view class="tag-input-row" wx:if="{{showTagInput}}">
+        <input class="tag-input" placeholder="输入标签，如：机房A、服务器"
+               value="{{tagInput}}" bindinput="onTagInput"
+               confirm-type="done" bindconfirm="confirmTag" />
+        <button class="tag-confirm-btn" bindtap="confirmTag">确定</button>
+        <button class="tag-cancel-btn" bindtap="cancelTagInput">取消</button>
+      </view>
+    </view>
+
+    <!-- 操作按钮 - WiFi 模式 -->
+    <view class="result-actions" wx:if="{{connectMode === 'websocket'}}">
+      <button class="btn-primary" style="flex:1; margin-right:16rpx;" bindtap="sendToDesktop" loading="{{sending}}" disabled="{{!wsPaired}}">
+        发送到电脑
+      </button>
+      <button class="btn-secondary" style="width:160rpx;" bindtap="copyResult">
+        复制
+      </button>
+    </view>
+
+    <!-- 操作按钮 - 剪贴板同步模式 -->
+    <view class="result-actions" wx:if="{{connectMode === 'clipboard'}}">
+      <button class="btn-primary" style="flex:1;" bindtap="copyResult">
+        复制到剪贴板
+      </button>
+    </view>
+
+    <!-- 操作按钮 - 独立模式 -->
+    <view class="result-actions" wx:if="{{connectMode === 'standalone'}}">
+      <button class="btn-primary" style="flex:1;" bindtap="copyResult">
+        复制到剪贴板
+      </button>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!lastResult}}">
+    <text class="empty-hint">点击上方按钮开始扫码</text>
+  </view>
+</view>

@@ -1,0 +1,141 @@
+/* app.wxss - 全局样式 */
+page {
+  background-color: #F5F5F5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 28rpx;
+  color: #333333;
+  box-sizing: border-box;
+}
+
+.container {
+  padding: 32rpx;
+  min-height: 100vh;
+}
+
+/* 卡片样式 */
+.card {
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+/* 按钮样式 */
+.btn-primary {
+  background: #07C160;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12rpx;
+  padding: 24rpx 48rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+}
+
+.btn-primary:active {
+  background: #06AE56;
+}
+
+.btn-secondary {
+  background: #F0F0F0;
+  color: #333333;
+  border: none;
+  border-radius: 12rpx;
+  padding: 24rpx 48rpx;
+  font-size: 32rpx;
+  text-align: center;
+  width: 100%;
+}
+
+.btn-secondary:active {
+  background: #E5E5E5;
+}
+
+.btn-danger {
+  background: #FA5151;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12rpx;
+  padding: 24rpx 48rpx;
+  font-size: 32rpx;
+  text-align: center;
+}
+
+/* 状态指示器 */
+.status-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.online {
+  background: #07C160;
+}
+
+.status-dot.offline {
+  background: #C0C0C0;
+}
+
+.status-dot.error {
+  background: #FA5151;
+}
+
+/* 文本样式 */
+.text-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.text-subtitle {
+  font-size: 28rpx;
+  color: #666666;
+}
+
+.text-hint {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.text-success {
+  color: #07C160;
+}
+
+.text-danger {
+  color: #FA5151;
+}
+
+/* 列表项 */
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #F0F0F0;
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  color: #CCCCCC;
+}
+
+.empty-state .empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-state .empty-text {
+  font-size: 28rpx;
+}

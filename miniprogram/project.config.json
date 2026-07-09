@@ -1,0 +1,68 @@
+{
+  "description": "ScanBridge - 手机扫码，电脑自动接收",
+  "packOptions": {
+    "ignore": [
+      { "type": "folder", "value": "cloudfunctions" },
+      { "type": "file", "value": "project.private.config.json" },
+      { "type": "file", "value": "generate_icon.py" }
+    ],
+    "include": []
+  },
+  "setting": {
+    "bundle": false,
+    "userConfirmedBundleSwitch": false,
+    "urlCheck": true,
+    "scopeDataCheck": false,
+    "coverView": true,
+    "es6": true,
+    "postcss": true,
+    "compileHotReLoad": false,
+    "lazyloadPlaceholderEnable": false,
+    "preloadBackgroundData": false,
+    "minified": true,
+    "autoAudits": false,
+    "newFeature": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "useIsolateContext": true,
+    "nodeModules": false,
+    "enhance": true,
+    "useMultiFrameRuntime": true,
+    "useApiHook": true,
+    "useApiHostProcess": true,
+    "showShadowRootInWxmlPanel": true,
+    "packNpmManually": false,
+    "enableEngineNative": false,
+    "checkInvalidKey": true,
+    "checkSiteMap": true,
+    "useStaticServer": true,
+    "showES6CompileOption": false,
+    "ignoreDevUnusedFiles": true,
+    "useCompilerPlugins": false,
+    "compileWorklet": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.3.4",
+  "appid": "your-appid-here",
+  "projectname": "scanbridge-miniprogram",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  },
+  "simulatorPluginLibVersion": {}
+}

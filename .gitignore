@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# WorkBuddy workspace
+.workbuddy/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE
+.vscode/
+.idea/
+
+# Project specific
+miniprogram/project.private.config.json
+
+# Push artifacts
+.push_batch_*.json
+.push_manifest.json
+prepare_push.py
